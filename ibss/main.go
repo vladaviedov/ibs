@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -17,8 +18,15 @@ type Report struct {
 
 var router = mux.NewRouter().StrictSlash(true)
 var deviceMap = make(map[string]string)
+var passkey string;
 
 func main() {
+	if len(os.Args) != 2 {
+		log.Fatalln("Invalid argument count. Usage: ibss <passkey>")
+		return
+	}
+	passkey = os.Args[1];
+
 	router.HandleFunc("/", home).Methods(http.MethodGet)
 	router.HandleFunc("/report", report).Methods(http.MethodPost)
 
@@ -40,7 +48,7 @@ func report(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Check passkey
-	if report.Passkey != "mypasskey" {
+	if report.Passkey != passkey {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintln(w, "Permission denied")
 		return
