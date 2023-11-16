@@ -16,6 +16,10 @@ type Report struct {
 	Passkey string `json:"passkey"`
 }
 
+type Status struct {
+	Address string `json:"address"`
+}
+
 var router = mux.NewRouter().StrictSlash(true)
 var deviceMap = make(map[string]string)
 var passkey string;
@@ -71,5 +75,8 @@ func retrieveReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, deviceAddr)
+	status := Status{
+		Address: deviceAddr,
+	}
+	json.NewEncoder(w).Encode(status)
 }
