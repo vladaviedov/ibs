@@ -13,13 +13,13 @@ type Status struct {
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatalln("Invalid argument count. Usage: ibss <passkey>")
+	if len(os.Args) != 3 {
+		log.Fatalln("Invalid argument count. Usage: ibsc <server> <device name>")
 		return
 	}
 
 	// Make request
-	url := fmt.Sprintf("http://localhost:8080/%s", os.Args[1])
+	url := fmt.Sprintf("http://%s/%s", os.Args[1], os.Args[2])
 	response, err := http.Get(url)
 	if err != nil {
 		log.Fatalln("Failed to get response from server.")
