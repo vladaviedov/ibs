@@ -24,6 +24,7 @@ type Settings struct {
 	Identifier string `json:"identifier"`
 	Server string `json:"server"`
 	Passkey string `json:"passkey"`
+	NetInterface string `json:"netInterface"`
 }
 
 func main() {
@@ -50,15 +51,14 @@ func main() {
 		os.Exit(1)
 	}
 
-
 }
 
 func sendReport(config *Settings) {
 	// Make report
 	report := Report{
 		Identifier: config.Identifier,
-		MAC: getMac(),
-		IP: getIp(),
+		MAC: getMac(config),
+		IP: getIp(config),
 		Timestamp: time.Now(),
 		Passkey: config.Passkey,
 	}
@@ -92,7 +92,7 @@ func sendReport(config *Settings) {
 	}
 }
 
-func getIp() string {
+func getIp(config *Settings) string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
 		log.Fatal(err)
@@ -103,6 +103,18 @@ func getIp() string {
 	return strings.Split(fullAddr, ":")[0]
 }
 
-func getMac() string {
-	return ""
+func getMac(config *Settings) string {
+	netInterface, err := net.InterfaceByName(config.NetInterface)
+	if err != nil {
+		log.Fatal("Net interface not available: ", err.Error())
+	}
+
+	// Verify MAC
+	hwAddr := netInterface.HardwareAddr.String()
+	mac, err := net.ParseMAC(hwAddr)
+	if err != nil {
+		log.Fatal("Failed to parse MAC address: ", err.Error())
+	}
+
+	return mac.String()
 }
