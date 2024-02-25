@@ -51,14 +51,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	sendReport(&config)
 }
 
 func sendReport(config *Settings) {
+	// Get net interface
+	netInterface, err := net.InterfaceByName(config.NetInterface)
+	if err != nil {
+		log.Fatal("Net interface not available: ", err.Error())
+	}
+
 	// Make report
 	report := Report{
 		Identifier: config.Identifier,
-		MAC: getMac(config),
-		IP: getIp(config),
+		MAC: getMac(netInterface),
+		IP: getIp(netInterface),
 		Timestamp: time.Now(),
 		Passkey: config.Passkey,
 	}
@@ -92,23 +99,24 @@ func sendReport(config *Settings) {
 	}
 }
 
-func getIp(config *Settings) string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+func getIp(netInterface *net.Interface) string {
+	addrs, err := netInterface.Addrs()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to get network address: ", err.Error())
 	}
-	defer conn.Close()
 
-	fullAddr := conn.LocalAddr().String()
-	return strings.Split(fullAddr, ":")[0]
+	for _, addr := range addrs {
+		// Apparently this works
+		if strings.Count(addr.String(), ":") < 2 {
+			return strings.Split(addr.String(), "/")[0]
+		}
+	}
+
+	log.Fatal("No IPv4 address found on this interface")
+	return ""
 }
 
-func getMac(config *Settings) string {
-	netInterface, err := net.InterfaceByName(config.NetInterface)
-	if err != nil {
-		log.Fatal("Net interface not available: ", err.Error())
-	}
-
+func getMac(netInterface *net.Interface) string {
 	// Verify MAC
 	hwAddr := netInterface.HardwareAddr.String()
 	mac, err := net.ParseMAC(hwAddr)
