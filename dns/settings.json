@@ -1,0 +1,15 @@
+{
+	"http": {
+		"use": true,
+		"port": ":80"
+	},
+	"https": {
+		"use": false,
+		"port": ":443",
+		"certFile": "",
+		"keyFile": ""
+	},
+	"dns": {
+		"port": ":53"
+	}
+}
