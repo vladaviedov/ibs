@@ -4,12 +4,14 @@ import (
 	"errors"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/miekg/dns"
 )
 
 var badTypeError = errors.New("Unsupported record type requested")
-var notFoundErorr = errors.New("DNS record not found")
+var notFoundError = errors.New("DNS record not found")
+var notHandledError = errors.New("Not handling this address")
 
 func ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	msg := dns.Msg{}
@@ -34,17 +36,24 @@ func resolve(name string, qtype uint16) ([]dns.RR, error) {
 		return nil, badTypeError
 	}
 
-	if name == "vladpi.ibs." {
-		return []dns.RR{&dns.A{
-			Hdr: dns.RR_Header{
-				Name: name,
-				Rrtype: dns.TypeA,
-				Class: dns.ClassINET,
-				Ttl: 60,
-			},
-			A: net.ParseIP("192.168.0.1"),
-		}}, nil
+	// Format: device.ibs.
+	parts := strings.Split(name, ".")
+	if len(parts) > 3 || parts[1] != "ibs" {
+		return nil, notHandledError
 	}
 
-	return nil, notFoundErorr
+	device, ok := DeviceMap[parts[0]]
+	if !ok {
+		return nil, notFoundError
+	}
+
+	return []dns.RR{&dns.A{
+		Hdr: dns.RR_Header{
+			Name: name,
+			Rrtype: dns.TypeA,
+			Class: dns.ClassINET,
+			Ttl: 60,
+		},
+		A: net.ParseIP(device.IP),
+	}}, nil
 }
