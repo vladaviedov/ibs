@@ -51,7 +51,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	sendReport(&config)
+	for {
+		sendReport(&config)
+		time.Sleep(time.Minute * 5)
+	}
 }
 
 func sendReport(config *Settings) {
