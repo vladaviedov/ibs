@@ -9,10 +9,12 @@ type Settings struct {
 	HTTP struct {
 		Use bool `json:"use"`
 		Port string `json:"port"`
+		DNSResolver bool `json:"dnsResolver"`
 	} `json:"http"`
 	HTTPS struct {
 		Use bool `json:"use"`
 		Port string `json:"port"`
+		DNSResolver bool `json:"dnsResolver"`
 		CertFile string `json:"certFile"`
 		KeyFile string `json:"keyFile"`
 	} `json:"https"`

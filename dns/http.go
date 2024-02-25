@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type Report struct {
@@ -15,7 +16,6 @@ type Report struct {
 
 func ShowDevices(w http.ResponseWriter, r *http.Request) {
 	for _, device := range(DeviceMap) {
-		log.Println(device.Timestamp)
 		fmt.Fprintf(w, "%-20s %-15s %s\n",
 			device.Identifier,
 			device.IP,
@@ -56,6 +56,21 @@ func ProcessReport(w http.ResponseWriter, r *http.Request) {
 	DeviceMutex.Unlock()
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func ResolveOverHTTP(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	identifier, ok := vars["id"]
+
+	device, ok := DeviceMap[identifier]
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintln(w, "Device not found")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, device.IP)
 }
 
 func checkAuth(report *Report) bool {

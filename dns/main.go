@@ -13,15 +13,11 @@ import (
 func main() {
 	loadSettings()
 
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/", ShowDevices).Methods(http.MethodGet)
-	router.HandleFunc("/", ProcessReport).Methods(http.MethodPost)
-
 	if Config.HTTP.Use {
-		go httpServer(router)
+		go httpServer()
 	}
 	if Config.HTTPS.Use {
-		go httpsServer(router)
+		go httpsServer()
 	}
 
 	dnsServer()
@@ -41,11 +37,27 @@ func loadSettings() {
 	log.Println("Server config loaded")
 }
 
-func httpServer(router *mux.Router) {
+func httpServer() {
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/", ShowDevices).Methods(http.MethodGet)
+	router.HandleFunc("/", ProcessReport).Methods(http.MethodPost)
+
+	if Config.HTTP.DNSResolver {
+		router.HandleFunc("/dns/{id}", ResolveOverHTTP).Methods(http.MethodGet)
+	}
+
 	log.Fatal(http.ListenAndServe(Config.HTTP.Port, router))
 }
 
-func httpsServer(router *mux.Router) {
+func httpsServer() {
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/", ShowDevices).Methods(http.MethodGet)
+	router.HandleFunc("/", ProcessReport).Methods(http.MethodPost)
+
+	if Config.HTTPS.DNSResolver {
+		router.HandleFunc("/dns/{id}", ResolveOverHTTP).Methods(http.MethodGet)
+	}
+
 	log.Fatal(http.ListenAndServeTLS(
 		Config.HTTPS.Port,
 		Config.HTTPS.CertFile,

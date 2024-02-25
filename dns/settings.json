@@ -1,11 +1,13 @@
 {
 	"http": {
 		"use": true,
-		"port": ":80"
+		"port": ":80",
+		"dnsResolver": false
 	},
 	"https": {
 		"use": false,
 		"port": ":443",
+		"dnsResolver": false,
 		"certFile": "",
 		"keyFile": ""
 	},
