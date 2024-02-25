@@ -9,43 +9,86 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type Report struct {
-	DeviceName string `json:"deviceName"`
-	AddressReport string `json:"addressReport"`
+	Identifier string `json:"identifier"`
+	MAC string `json:"mac"`
+	IP string `json:"ip"`
+	Timestamp time.Time `json:"timestamp"`
+	Passkey string `json:"passkey"`
+}
+
+type Settings struct {
+	Identifier string `json:"identifier"`
+	Server string `json:"server"`
 	Passkey string `json:"passkey"`
 }
 
 func main() {
-	if len(os.Args) != 4 {
-		log.Fatalln("Invalid argument count. Usage: ibsd <server> <device name> <passkey>")
-		return
+	// Command line args
+	var configPath string
+	if len(os.Args) == 2 {
+		configPath = os.Args[1]
+	} else {
+		configPath = "/etc/ibsd/config.json"
 	}
 
-	report := Report{
-		DeviceName: os.Args[2],
-		AddressReport: getIp(),
-		Passkey: os.Args[3],
-	}
-	url := fmt.Sprintf("http://%s/report", os.Args[1])
-
-	// Send request
-	jsonReport, jsonErr := json.Marshal(report)
-	if jsonErr != nil {
-		log.Fatal(jsonErr)
-		return
-	}
-
-	res, err := http.Post(url, "application/json", bytes.NewBuffer(jsonReport))
+	// Read config
+	var config Settings
+	content, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, "Failed to open config file")
+		fmt.Fprintln(os.Stderr, "Tried to access: " + configPath)
+		os.Exit(1)
+	}
+
+	err = json.Unmarshal(content, &config)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to parse config file")
+		os.Exit(1)
+	}
+
+
+}
+
+func sendReport(config *Settings) {
+	// Make report
+	report := Report{
+		Identifier: config.Identifier,
+		MAC: getMac(),
+		IP: getIp(),
+		Timestamp: time.Now(),
+		Passkey: config.Passkey,
+	}
+
+	requestBody, err := json.Marshal(report)
+	if err != nil {
+		log.Fatal("Failed to serialize report: ", err.Error())
+	}
+
+	// Try https
+	url := "https://" + config.Server
+	res, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	if err == nil {
+		if res.StatusCode != http.StatusOK {
+			log.Println("Request returned error")
+		}
+
+		return
+	}
+
+	// Try http
+	url = "http://" + config.Server
+	res, err = http.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		log.Println("Failed to reach server")
 		return
 	}
 
 	if res.StatusCode != http.StatusOK {
-		log.Fatal("Request returned error.")
-		return
+		log.Println("Request returned error")
 	}
 }
 
@@ -58,4 +101,8 @@ func getIp() string {
 
 	fullAddr := conn.LocalAddr().String()
 	return strings.Split(fullAddr, ":")[0]
+}
+
+func getMac() string {
+	return ""
 }
