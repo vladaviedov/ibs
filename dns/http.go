@@ -7,22 +7,13 @@ import (
 	"time"
 )
 
-type DeviceData struct {
-	Identifier string `json:"identifier"`
-	MAC string `json:"mac"`
-	IP string `json:"ip"`
-	Timestamp time.Time `json:"timestamp"`
-}
-
 type Report struct {
 	DeviceData
 	Passkey string `json:"passkey"`
 }
 
-var deviceMap = make(map[string]DeviceData)
-
 func ShowDevices(w http.ResponseWriter, r *http.Request) {
-	for _, device := range(deviceMap) {
+	for _, device := range(DeviceMap) {
 		fmt.Fprintf(w, "%20s %15s %s\n",
 			device.Identifier,
 			device.IP,
@@ -51,7 +42,8 @@ func ProcessReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check storage
-	store, exists := deviceMap[report.Identifier]
+	DeviceMutex.Lock()
+	store, exists := DeviceMap[report.Identifier]
 	if exists {
 		if store.MAC != report.MAC {
 			w.WriteHeader(http.StatusForbidden)
@@ -60,7 +52,9 @@ func ProcessReport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	deviceMap[report.Identifier] = report.DeviceData
+	DeviceMap[report.Identifier] = report.DeviceData
+	DeviceMutex.Unlock()
+
 	w.WriteHeader(http.StatusOK)
 }
 
