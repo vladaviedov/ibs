@@ -1,0 +1,18 @@
+{
+	"http": {
+		"use": true,
+		"port": ":8080",
+		"dnsResolver": true
+	},
+	"https": {
+		"use": false,
+		"port": ":443",
+		"dnsResolver": false,
+		"certFile": "",
+		"keyFile": ""
+	},
+	"dns": {
+		"port": ":5533"
+	},
+	"passkey": "test"
+}

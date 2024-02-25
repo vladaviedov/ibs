@@ -11,7 +11,15 @@ import (
 )
 
 func main() {
-	loadSettings()
+	// Command line args
+	var configPath string
+	if len(os.Args) == 2 {
+		configPath = os.Args[1]
+	} else {
+		configPath = "config.json"
+	}
+
+	loadSettings(configPath)
 
 	if Config.HTTP.Use {
 		go httpServer()
@@ -23,10 +31,10 @@ func main() {
 	dnsServer()
 }
 
-func loadSettings() {
-	content, err := os.ReadFile("settings.json")
+func loadSettings(configPath string) {
+	content, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Fatal("Failed to open 'settings.json'. Config file is required")
+		log.Fatal("Failed to open " + configPath + ". A config file is required")
 	}
 
 	err = json.Unmarshal(content, &Config)
