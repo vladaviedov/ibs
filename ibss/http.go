@@ -73,6 +73,7 @@ func ResolveOverHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, device.IP)
 }
 
+// TODO: better auth system
 func checkAuth(report *Report) bool {
-	return report.Passkey == "test"
+	return report.Passkey == Config.Passkey
 }

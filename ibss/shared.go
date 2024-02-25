@@ -21,6 +21,7 @@ type Settings struct {
 	DNS struct {
 		Port string `json:"port"`
 	} `json:"dns"`
+	Passkey string `json:"passkey"`
 }
 
 type DeviceData struct {
