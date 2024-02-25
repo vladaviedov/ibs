@@ -8,8 +8,8 @@ import (
 	"github.com/miekg/dns"
 )
 
-var BadTypeError = errors.New("Unsupported record type requested")
-var NotFoundErorr = errors.New("DNS record not found")
+var badTypeError = errors.New("Unsupported record type requested")
+var notFoundErorr = errors.New("DNS record not found")
 
 func ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	msg := dns.Msg{}
@@ -31,7 +31,7 @@ func ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 
 func resolve(name string, qtype uint16) ([]dns.RR, error) {
 	if qtype != dns.TypeA {
-		return nil, BadTypeError
+		return nil, badTypeError
 	}
 
 	if name == "vladpi.ibs." {
@@ -46,5 +46,5 @@ func resolve(name string, qtype uint16) ([]dns.RR, error) {
 		}}, nil
 	}
 
-	return nil, NotFoundErorr
+	return nil, notFoundErorr
 }
