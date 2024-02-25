@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -14,14 +15,13 @@ type Report struct {
 
 func ShowDevices(w http.ResponseWriter, r *http.Request) {
 	for _, device := range(DeviceMap) {
-		fmt.Fprintf(w, "%20s %15s %s\n",
+		log.Println(device.Timestamp)
+		fmt.Fprintf(w, "%-20s %-15s %s\n",
 			device.Identifier,
 			device.IP,
 			device.Timestamp.Format(time.DateTime),
 		)
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func ProcessReport(w http.ResponseWriter, r *http.Request) {
