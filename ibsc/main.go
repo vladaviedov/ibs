@@ -13,6 +13,7 @@ import (
 )
 
 const pattern = `\S*\.ibs\b`
+const version = "0.1.0"
 
 type Settings struct {
 	Server string `json:"server"`
@@ -24,6 +25,15 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Check options
+	if os.Args[1] == "--version" || os.Args[1] == "-v" {
+		printVersion()
+		os.Exit(0)
+	}
+	if os.Args[1] == "--help" || os.Args[1] == "-h" {
+		printUsage()
+		os.Exit(0)
+	}
 	reg, err := regexp.Compile(pattern)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Bad matching pattern")
@@ -148,4 +158,20 @@ func resolveDomain(config *Settings, domain string) string {
 	}
 
 	return string(bytes)
+}
+
+func printVersion() {
+	fmt.Printf("IBS client v%s\n", version)
+}
+
+func printUsage() {
+	fmt.Println("Usage: ibsc [opt] <command>")
+	fmt.Println()
+	fmt.Println("IBS client resolves .ibs domains over http/https before running the command.")
+	fmt.Println("All strings which end with .ibs will be replaced by their assigned ip.")
+	fmt.Println("Server selection is done in the config file located at $HOME/.ibsc_conf")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Printf("%-15s: %s", "-v, --version", "Print command version\n")
+	fmt.Printf("%-15s: %s", "-h, --help", "Print usage information\n")
 }
