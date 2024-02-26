@@ -70,7 +70,7 @@ func ResolveOverHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, device.IP)
+	fmt.Fprint(w, device.IP)
 }
 
 // TODO: better auth system

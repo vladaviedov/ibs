@@ -49,6 +49,7 @@ func httpServer() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", ShowDevices).Methods(http.MethodGet)
 	router.HandleFunc("/", ProcessReport).Methods(http.MethodPost)
+	router.HandleFunc("/ping", ping).Methods(http.MethodGet)
 
 	if Config.HTTP.DNSResolver {
 		router.HandleFunc("/dns/{id}", ResolveOverHTTP).Methods(http.MethodGet)
@@ -61,6 +62,7 @@ func httpsServer() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", ShowDevices).Methods(http.MethodGet)
 	router.HandleFunc("/", ProcessReport).Methods(http.MethodPost)
+	router.HandleFunc("/ping", ping).Methods(http.MethodGet)
 
 	if Config.HTTPS.DNSResolver {
 		router.HandleFunc("/dns/{id}", ResolveOverHTTP).Methods(http.MethodGet)
@@ -72,6 +74,10 @@ func httpsServer() {
 		Config.HTTPS.KeyFile,
 		router,
 	))
+}
+
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func dnsServer() {
