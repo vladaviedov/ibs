@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
+	"syscall"
 )
 
 const pattern = `\S*\.ibs\b`
@@ -50,7 +52,18 @@ func main() {
 		os.Args[i] = arg
 	}
 
-	fmt.Println(strings.Join(os.Args[1:], " "))
+	// Find needed binary, since we don't have execvp
+	bin, err := exec.LookPath(os.Args[1])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	err = syscall.Exec(bin, os.Args[1:], os.Environ())
+
+	// Exec failed
+	fmt.Fprintln(os.Stderr, err.Error())
+	os.Exit(1)
 }
 
 func loadConfig() Settings {
