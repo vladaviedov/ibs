@@ -3,42 +3,106 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 )
 
-type Status struct {
-	Address string `json:"address"`
+const pattern = `\S*\.ibs\b`
+
+type Settings struct {
+	Server string `json:"server"`
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		log.Fatalln("Invalid argument count. Usage: ibsc <server> <device name>")
-		return
+	if len(os.Args) == 1 {
+		printStatus()
+		os.Exit(0)
 	}
 
-	// Make request
-	url := fmt.Sprintf("http://%s/%s", os.Args[1], os.Args[2])
-	response, err := http.Get(url)
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatalln("Failed to get response from server.")
-		return
+		fmt.Fprintf(os.Stderr, "No home directory :(")
+		os.Exit(1)
 	}
 
-	// Check status code
-	if response.StatusCode != http.StatusOK {
-		log.Fatalln("Device not found.")
-		return
-	}
-
-	// Get device ip
-	var status Status
-	err = json.NewDecoder(response.Body).Decode(&status)
+	// Read config
+	configPath := homeDir + "/.ibsc_conf"
+	var config Settings
+	content, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Fatalln("Failed to parse response.")
-		return
+		fmt.Fprintln(os.Stderr, "Failed to open config file")
+		fmt.Fprintln(os.Stderr, "Tried to access: ", configPath)
+		os.Exit(1)
 	}
 
-	fmt.Println(status.Address)
+	err = json.Unmarshal(content, &config)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to parse config file")
+		os.Exit(1)
+	}
+
+	reg, err := regexp.Compile(pattern)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Bad matching pattern")
+		os.Exit(1)
+	}
+
+	// Find ibs addresses
+	for i, arg := range os.Args {
+		// Skip ibsc
+		if i == 0 {
+			continue;
+		}
+
+		for {
+			match := reg.FindString(arg)
+			if match == "" {
+				break
+			}
+
+			ip := resolveDomain(&config, match)
+			arg = strings.ReplaceAll(arg, match, ip)
+		}
+
+		os.Args[i] = arg
+	}
+
+	fmt.Println(strings.Join(os.Args[1:], " "))
+}
+
+func printStatus() {
+	
+}
+
+func resolveDomain(config *Settings, domain string) string {
+	identifier := strings.TrimSuffix(domain, ".ibs")
+
+	// Try https
+	url := "https://" + config.Server + "/dns/" + identifier
+	res, err := http.Get(url)
+	if err != nil {
+		// Try http
+		url = "http://" + config.Server + "/dns/" + identifier
+		res, err = http.Get(url)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Failed to reach server")
+			os.Exit(1)
+		}
+	}
+
+	if res.StatusCode != http.StatusOK {
+		fmt.Fprintln(os.Stderr, "Server failed to resolve ", domain)
+		os.Exit(1)
+	}
+
+	bytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to get response body: ", err.Error())
+		os.Exit(1)
+	}
+
+	return string(bytes)
 }

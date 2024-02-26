@@ -1,6 +1,6 @@
 {
-	"identifier": "",
-	"server": "",
-	"passkey": "",
-	"netInterface": ""
+	"identifier": "pc",
+	"server": "localhost:8080",
+	"passkey": "test",
+	"netInterface": "enp0s31f6"
 }
