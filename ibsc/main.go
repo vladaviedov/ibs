@@ -34,7 +34,7 @@ func main() {
 	content, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to open config file")
-		fmt.Fprintln(os.Stderr, "Tried to access: ", configPath)
+		fmt.Fprintln(os.Stderr, "Tried to access:", configPath)
 		os.Exit(1)
 	}
 
@@ -94,13 +94,13 @@ func resolveDomain(config *Settings, domain string) string {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		fmt.Fprintln(os.Stderr, "Server failed to resolve ", domain)
+		fmt.Fprintln(os.Stderr, "Server failed to resolve", domain)
 		os.Exit(1)
 	}
 
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to get response body: ", err.Error())
+		fmt.Fprintln(os.Stderr, "Failed to get response body:", err.Error())
 		os.Exit(1)
 	}
 
