@@ -13,7 +13,7 @@ import (
 )
 
 const pattern = `[a-zA-Z0-9][a-zA-Z0-9-]*\.((ibs)|(IBS))\b`
-const version = "0.1.0"
+const version = "0.2.0"
 
 type Settings struct {
 	Server string `json:"server"`
