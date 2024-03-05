@@ -12,7 +12,7 @@ import (
 	"syscall"
 )
 
-const pattern = `\S*\.ibs\b`
+const pattern = `[a-zA-Z0-9][a-zA-Z0-9-]*\.((ibs)|(IBS))\b`
 const version = "0.1.0"
 
 type Settings struct {
@@ -69,6 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Println(strings.Join(os.Args[1:], " "))
 	err = syscall.Exec(bin, os.Args[1:], os.Environ())
 
 	// Exec failed
