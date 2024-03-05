@@ -18,6 +18,7 @@ const version = "0.1.0"
 type Settings struct {
 	Server string `json:"server"`
 	WithShell bool `json:"withShell"`
+	ShowCommand bool `json:"showCommand"`
 }
 
 func main() {
@@ -88,6 +89,9 @@ func main() {
 	}
 
 	// Run exec
+	if config.ShowCommand {
+		fmt.Println(strings.Join(argv, " "))
+	}
 	err = syscall.Exec(bin, argv, os.Environ())
 
 	// Exec failed
