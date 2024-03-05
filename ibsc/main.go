@@ -17,6 +17,7 @@ const version = "0.1.0"
 
 type Settings struct {
 	Server string `json:"server"`
+	WithShell bool `json:"withShell"`
 }
 
 func main() {
@@ -25,7 +26,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Check options
 	if os.Args[1] == "--version" || os.Args[1] == "-v" {
 		printVersion()
 		os.Exit(0)
@@ -34,6 +34,7 @@ func main() {
 		printUsage()
 		os.Exit(0)
 	}
+
 	reg, err := regexp.Compile(pattern)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Bad matching pattern")
@@ -62,15 +63,32 @@ func main() {
 		os.Args[i] = arg
 	}
 
-	// Find needed binary, since we don't have execvp
-	bin, err := exec.LookPath(os.Args[1])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+	var bin string
+	var argv []string
+	if !config.WithShell {
+		// Find needed binary, since we don't have execvp
+		bin, err = exec.LookPath(os.Args[1])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		argv = os.Args[1:]
+	} else {
+		// Try to get from env or fallback to sh
+		bin = os.Getenv("SHELL")
+		if bin == "" {
+			fmt.Fprintln(os.Stderr, "Warning: $SHELL is not set, trying to find sh...")
+			bin, err = exec.LookPath("sh")
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+		}
+		argv = append([]string{bin, "-c"}, strings.Join(os.Args[1:], " "))
 	}
 
-	fmt.Println(strings.Join(os.Args[1:], " "))
-	err = syscall.Exec(bin, os.Args[1:], os.Environ())
+	// Run exec
+	err = syscall.Exec(bin, argv, os.Environ())
 
 	// Exec failed
 	fmt.Fprintln(os.Stderr, err.Error())
