@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const version = "0.1.0"
+
 type Report struct {
 	Identifier string `json:"identifier"`
 	MAC string `json:"mac"`
@@ -31,6 +33,16 @@ func main() {
 	// Command line args
 	var configPath string
 	if len(os.Args) == 2 {
+		// Check options
+		if os.Args[1] == "--version" || os.Args[1] == "-v" {
+			printVersion()
+			os.Exit(0)
+		}
+		if os.Args[1] == "--help" || os.Args[1] == "-h" {
+			printUsage()
+			os.Exit(0)
+		}
+
 		configPath = os.Args[1]
 	} else {
 		configPath = "/etc/ibsd/config.json"
@@ -128,4 +140,21 @@ func getMac(netInterface *net.Interface) string {
 	}
 
 	return mac.String()
+}
+
+func printVersion() {
+	fmt.Printf("IBS daemon v%s\n", version)
+}
+
+func printUsage() {
+	fmt.Println("Usage: ibsd [opt] [configpath]")
+	fmt.Println()
+	fmt.Println("IBS daemon sends out device network information so that it can be found by IBS clients.") 
+	fmt.Println("A report will be sent every 5 minutes when this program is running.")
+	fmt.Println("By default /etc/ibsd/config.json will be parsed for settings.")
+	fmt.Println("The used config file path can be changed by passing a filepath as an argument.")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Printf("%-15s: %s", "-v, --version", "Print command version\n")
+	fmt.Printf("%-15s: %s", "-h, --help", "Print usage information\n")
 }
