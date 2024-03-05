@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,10 +11,22 @@ import (
 	"github.com/miekg/dns"
 )
 
+const version = "0.1.0"
+
 func main() {
 	// Command line args
 	var configPath string
 	if len(os.Args) == 2 {
+		// Check options
+		if os.Args[1] == "--version" || os.Args[1] == "-v" {
+			printVersion()
+			os.Exit(0)
+		}
+		if os.Args[1] == "--help" || os.Args[1] == "-h" {
+			printUsage()
+			os.Exit(0)
+		}
+
 		configPath = os.Args[1]
 	} else {
 		configPath = "config.json"
@@ -90,4 +103,21 @@ func dnsServer() {
 	}
 
 	log.Fatal(server.ListenAndServe())
+}
+
+func printVersion() {
+	fmt.Printf("IBS server v%s\n", version)
+}
+
+func printUsage() {
+	fmt.Println("Usage: ibss [opt] [configpath]")
+	fmt.Println()
+	fmt.Println("IBS server is a DNS/HTTP/HTTPS server for the IBS system.")
+	fmt.Println("Please see the config file to configure your server components.")
+	fmt.Println("By default ./config.json will be parsed for settings.")
+	fmt.Println("The used config file path can be changed by passing a filepath as an argument.")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Printf("%-15s: %s", "-v, --version", "Print command version\n")
+	fmt.Printf("%-15s: %s", "-h, --help", "Print usage information\n")
 }
