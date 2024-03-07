@@ -12,6 +12,7 @@
 		"keyFile": ""
 	},
 	"dns": {
+		"use": true,
 		"port": ":53"
 	},
 	"passkey": ""

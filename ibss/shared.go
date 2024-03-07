@@ -19,6 +19,7 @@ type Settings struct {
 		KeyFile string `json:"keyFile"`
 	} `json:"https"`
 	DNS struct {
+		Use bool `json:"use"`
 		Port string `json:"port"`
 	} `json:"dns"`
 	Passkey string `json:"passkey"`
