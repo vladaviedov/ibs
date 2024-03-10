@@ -10,16 +10,30 @@ import (
 )
 
 type Report struct {
-	DeviceData
+	Identifier string `json:"identifier"`
+	MAC string `json:"mac"`
+	IP string `json:"ip"`
+	Timestamp time.Time `json:"timestamp"`
 	Passkey string `json:"passkey"`
 }
 
 func ShowDevices(w http.ResponseWriter, r *http.Request) {
+	// Header
+	fmt.Fprintf(w, "%-20s %-20s %-20s %-20s %-20s\n\n",
+		"Identifier",
+		"IP",
+		"Client TS",
+		"Server TS",
+		"Status",
+	)
+
 	for _, device := range(DeviceMap) {
-		fmt.Fprintf(w, "%-20s %-15s %s\n",
+		fmt.Fprintf(w, "%-20s %-20s %-20s %-20s %-20s\n",
 			device.Identifier,
 			device.IP,
-			device.Timestamp.Format(time.DateTime),
+			device.ClientTimestamp.Format(time.DateTime),
+			device.ServerTimestamp.Format(time.DateTime),
+			getStatus(device.ServerTimestamp),
 		)
 	}
 }
@@ -52,7 +66,13 @@ func ProcessReport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	DeviceMap[report.Identifier] = report.DeviceData
+	DeviceMap[report.Identifier] = DeviceData{
+		Identifier: report.Identifier,
+		MAC: report.MAC,
+		IP: report.IP,
+		ClientTimestamp: report.Timestamp.UTC(),
+		ServerTimestamp: time.Now().UTC(),
+	}
 	DeviceMutex.Unlock()
 
 	w.WriteHeader(http.StatusOK)
@@ -76,4 +96,17 @@ func ResolveOverHTTP(w http.ResponseWriter, r *http.Request) {
 // TODO: better auth system
 func checkAuth(report *Report) bool {
 	return report.Passkey == Config.Passkey
+}
+
+func getStatus(lastTimestamp time.Time) string {
+	minElapsed := time.Now().Sub(lastTimestamp).Minutes()
+
+	switch {
+		case minElapsed <= 5.1:
+			return "online"
+		case minElapsed <= 30.1:
+			return "missing"
+		default:
+			return "offline"
+	}
 }

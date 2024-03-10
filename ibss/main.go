@@ -11,7 +11,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 func main() {
 	// Command line args
@@ -34,14 +34,22 @@ func main() {
 
 	loadSettings(configPath)
 
+	servCount := 0
 	if Config.HTTP.Use {
-		go httpServer()
+		servCount++
 	}
 	if Config.HTTPS.Use {
-		go httpsServer()
+		servCount++
+	}
+	if Config.DNS.Use {
+		servCount++
 	}
 
-	dnsServer()
+	runServer(httpServer, Config.HTTP.Use, &servCount)
+	runServer(httpsServer, Config.HTTPS.Use, &servCount)
+	runServer(dnsServer, Config.DNS.Use, &servCount)
+
+	fmt.Println("No servers are enabled. Exiting program.")
 }
 
 func loadSettings(configPath string) {
@@ -56,6 +64,19 @@ func loadSettings(configPath string) {
 	}
 
 	log.Println("Server config loaded")
+}
+
+func runServer(serverFunc func (), enabled bool, count *int) {
+	if (!enabled) {
+		return
+	}
+
+	if (*count == 1) {
+		serverFunc()
+	} else {
+		*count--
+		go serverFunc()
+	}
 }
 
 func httpServer() {

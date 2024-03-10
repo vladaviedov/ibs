@@ -19,16 +19,18 @@ type Settings struct {
 		KeyFile string `json:"keyFile"`
 	} `json:"https"`
 	DNS struct {
+		Use bool `json:"use"`
 		Port string `json:"port"`
 	} `json:"dns"`
 	Passkey string `json:"passkey"`
 }
 
 type DeviceData struct {
-	Identifier string `json:"identifier"`
-	MAC string `json:"mac"`
-	IP string `json:"ip"`
-	Timestamp time.Time `json:"timestamp"`
+	Identifier string
+	MAC string
+	IP string
+	ClientTimestamp time.Time
+	ServerTimestamp time.Time
 }
 
 var Config Settings
