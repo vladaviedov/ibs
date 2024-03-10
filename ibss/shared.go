@@ -26,10 +26,11 @@ type Settings struct {
 }
 
 type DeviceData struct {
-	Identifier string `json:"identifier"`
-	MAC string `json:"mac"`
-	IP string `json:"ip"`
-	Timestamp time.Time `json:"timestamp"`
+	Identifier string
+	MAC string
+	IP string
+	ClientTimestamp time.Time
+	ServerTimestamp time.Time
 }
 
 var Config Settings
