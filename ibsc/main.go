@@ -13,44 +13,63 @@ import (
 )
 
 const pattern = `[a-zA-Z0-9][a-zA-Z0-9-]*\.((ibs)|(IBS))\b`
-const version = "0.2.0"
+const version = "0.3.0"
 
 type Settings struct {
 	Server string `json:"server"`
+	PortHTTP uint `json:"portHttp"`
+	PortHTTPS uint `json:"portHttps"`
 	WithShell bool `json:"withShell"`
 	ShowCommand bool `json:"showCommand"`
 }
 
 func main() {
-	if len(os.Args) == 1 {
-		printStatus()
-		os.Exit(0)
-	}
-
-	if os.Args[1] == "--version" || os.Args[1] == "-v" {
-		printVersion()
-		os.Exit(0)
-	}
-	if os.Args[1] == "--help" || os.Args[1] == "-h" {
-		printUsage()
-		os.Exit(0)
-	}
-
 	reg, err := regexp.Compile(pattern)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Bad matching pattern")
+		fmt.Fprintln(os.Stderr, "Your ibsc binary is broken :(")
 		os.Exit(1)
 	}
 
-	config := loadConfig()
+	cmdStartIndex := len(os.Args)
+	var configPath *string = nil
 
-	// Find ibs addresses
-	for i, arg := range os.Args {
-		// Skip ibsc
-		if i == 0 {
-			continue;
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		if (arg[0] != '-') {
+			cmdStartIndex = i
+			break
 		}
 
+		if arg == "--version" || arg== "-v" {
+			printVersion()
+			os.Exit(0)
+		}
+		if arg == "--help" || arg == "-h" {
+			printUsage()
+			os.Exit(0)
+		}
+		if arg == "--config" || arg == "-c" {
+			// Check if parameter exists
+			if len(os.Args) <= i + 1 || configPath != nil {
+				fmt.Fprintln(os.Stderr, "Invalid config option invokation")
+				os.Exit(1)
+			}
+
+			configPath = &os.Args[i + 1]
+			i++
+		}
+	}
+
+	config := loadConfig(configPath)
+	if cmdStartIndex == len(os.Args) {
+		printStatus(&config)
+		os.Exit(0)
+	}
+	
+	// Find ibs addresses
+	var argv []string
+	for _, arg := range os.Args[cmdStartIndex:] {
 		for {
 			match := reg.FindString(arg)
 			if match == "" {
@@ -61,19 +80,17 @@ func main() {
 			arg = strings.ReplaceAll(arg, match, ip)
 		}
 
-		os.Args[i] = arg
+		argv = append(argv, arg)
 	}
 
 	var bin string
-	var argv []string
 	if !config.WithShell {
 		// Find needed binary, since we don't have execvp
-		bin, err = exec.LookPath(os.Args[1])
+		bin, err = exec.LookPath(argv[0])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
-		argv = os.Args[1:]
 	} else {
 		// Try to get from env or fallback to sh
 		bin = os.Getenv("SHELL")
@@ -85,7 +102,7 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		argv = append([]string{bin, "-c"}, strings.Join(os.Args[1:], " "))
+		argv = append([]string{bin, "-c"}, strings.Join(argv, " "))
 	}
 
 	// Run exec
@@ -99,15 +116,22 @@ func main() {
 	os.Exit(1)
 }
 
-func loadConfig() Settings {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "No home directory :(")
-		os.Exit(1)
+func loadConfig(path *string) Settings {
+	var configPath string
+	if path == nil {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "No home directory :(")
+			os.Exit(1)
+		}
+
+		// Default config path
+		configPath = homeDir + "/.ibsc_conf"
+	} else {
+		configPath = *path
 	}
 
 	// Read config
-	configPath := homeDir + "/.ibsc_conf"
 	var config Settings
 	content, err := os.ReadFile(configPath)
 	if err != nil {
@@ -125,31 +149,32 @@ func loadConfig() Settings {
 	return config
 }
 
-func printStatus() {
-	config := loadConfig()
+func printStatus(config *Settings) {
 	fmt.Println("Server:", config.Server)
 	fmt.Println("--------------------")
 
 	// Ping HTTPS
-	url := "https://" + config.Server + "/ping"
+	url := fmt.Sprintf("https://%s:%d/ping", config.Server, config.PortHTTPS)
 	res, err := http.Get(url)
+	fmt.Printf("https (%d): ", config.PortHTTPS)
 	if err != nil {
-		fmt.Println("https: not reachable")
+		fmt.Println("not reachable")
 	} else if res.StatusCode != http.StatusOK {
-		fmt.Println("https: server error")
+		fmt.Println("server error")
 	} else {
-		fmt.Println("https: good")
+		fmt.Println("good")
 	}
 
 	// Ping HTTP
-	url = "http://" + config.Server + "/ping"
+	url = fmt.Sprintf("http://%s:%d/ping", config.Server, config.PortHTTP)
 	res, err = http.Get(url)
+	fmt.Printf("http (%d): ", config.PortHTTP)
 	if err != nil {
-		fmt.Println("http:  not reachable")
+		fmt.Println("not reachable")
 	} else if res.StatusCode != http.StatusOK {
-		fmt.Println("http:  server error")
+		fmt.Println("server error")
 	} else {
-		fmt.Println("http:  good")
+		fmt.Println("good")
 	}
 }
 
@@ -157,11 +182,11 @@ func resolveDomain(config *Settings, domain string) string {
 	identifier := strings.TrimSuffix(domain, ".ibs")
 
 	// Try https
-	url := "https://" + config.Server + "/dns/" + identifier
+	url := fmt.Sprintf("https://%s:%d/dns/%s", config.Server, config.PortHTTPS, identifier)
 	res, err := http.Get(url)
 	if err != nil {
 		// Try http
-		url = "http://" + config.Server + "/dns/" + identifier
+		url = fmt.Sprintf("http://%s:%d/dns/%s", config.Server, config.PortHTTP, identifier)
 		res, err = http.Get(url)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Failed to reach server")
@@ -195,6 +220,7 @@ func printUsage() {
 	fmt.Println("Server selection is done in the config file located at $HOME/.ibsc_conf")
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Printf("%-15s: %s", "-v, --version", "Print command version\n")
-	fmt.Printf("%-15s: %s", "-h, --help", "Print usage information\n")
+	fmt.Printf("%-20s: %s\n", "-v, --version", "Print command version")
+	fmt.Printf("%-20s: %s\n", "-h, --help", "Print usage information")
+	fmt.Printf("%-20s: %s\n", "-c, --config <path>", "Specify configuration file")
 }

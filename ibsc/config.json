@@ -1,5 +1,7 @@
 {
 	"server": "example.com",
+	"portHttp": 80,
+	"portHttps": 443,
 	"withShell": false,
 	"showCommand": false
 }
