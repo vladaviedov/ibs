@@ -13,7 +13,7 @@ import (
 )
 
 const pattern = `[a-zA-Z0-9][a-zA-Z0-9-]*\.((ibs)|(IBS))\b`
-const version = "0.2.0"
+const version = "0.3.0"
 
 type Settings struct {
 	Server string `json:"server"`
@@ -220,6 +220,7 @@ func printUsage() {
 	fmt.Println("Server selection is done in the config file located at $HOME/.ibsc_conf")
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Printf("%-15s: %s", "-v, --version", "Print command version\n")
-	fmt.Printf("%-15s: %s", "-h, --help", "Print usage information\n")
+	fmt.Printf("%-20s: %s\n", "-v, --version", "Print command version")
+	fmt.Printf("%-20s: %s\n", "-h, --help", "Print usage information")
+	fmt.Printf("%-20s: %s\n", "-c, --config <path>", "Specify configuration file")
 }
