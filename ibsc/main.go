@@ -22,35 +22,53 @@ type Settings struct {
 }
 
 func main() {
+	reg, err := regexp.Compile(pattern)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Bad matching pattern")
+		fmt.Fprintln(os.Stderr, "Your ibsc binary is broken :(")
+		os.Exit(1)
+	}
+
 	if len(os.Args) == 1 {
 		printStatus()
 		os.Exit(0)
 	}
 
-	if os.Args[1] == "--version" || os.Args[1] == "-v" {
-		printVersion()
-		os.Exit(0)
-	}
-	if os.Args[1] == "--help" || os.Args[1] == "-h" {
-		printUsage()
-		os.Exit(0)
-	}
+	cmdStartIndex := 1
+	var configPath *string = nil
 
-	reg, err := regexp.Compile(pattern)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Bad matching pattern")
-		os.Exit(1)
-	}
-
-	config := loadConfig()
-
-	// Find ibs addresses
-	for i, arg := range os.Args {
-		// Skip ibsc
-		if i == 0 {
-			continue;
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		if (arg[0] != '-') {
+			cmdStartIndex = i
+			break
 		}
 
+		if arg == "--version" || arg== "-v" {
+			printVersion()
+			os.Exit(0)
+		}
+		if arg == "--help" || arg == "-h" {
+			printUsage()
+			os.Exit(0)
+		}
+		if arg == "--config" || arg == "-c" {
+			// Check if parameter exists
+			if len(os.Args) <= i + 1 || configPath != nil {
+				fmt.Fprintln(os.Stderr, "Invalid config option invokation")
+				os.Exit(1)
+			}
+
+			configPath = &os.Args[i + 1]
+			i++
+		}
+	}
+
+	config := loadConfig(configPath)
+	
+	// Find ibs addresses
+	var argv []string
+	for _, arg := range os.Args[cmdStartIndex:] {
 		for {
 			match := reg.FindString(arg)
 			if match == "" {
@@ -61,19 +79,17 @@ func main() {
 			arg = strings.ReplaceAll(arg, match, ip)
 		}
 
-		os.Args[i] = arg
+		argv = append(argv, arg)
 	}
 
 	var bin string
-	var argv []string
 	if !config.WithShell {
 		// Find needed binary, since we don't have execvp
-		bin, err = exec.LookPath(os.Args[1])
+		bin, err = exec.LookPath(argv[0])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
-		argv = os.Args[1:]
 	} else {
 		// Try to get from env or fallback to sh
 		bin = os.Getenv("SHELL")
@@ -85,7 +101,7 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		argv = append([]string{bin, "-c"}, strings.Join(os.Args[1:], " "))
+		argv = append([]string{bin, "-c"}, strings.Join(argv, " "))
 	}
 
 	// Run exec
@@ -99,15 +115,22 @@ func main() {
 	os.Exit(1)
 }
 
-func loadConfig() Settings {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "No home directory :(")
-		os.Exit(1)
+func loadConfig(path *string) Settings {
+	var configPath string
+	if path == nil {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "No home directory :(")
+			os.Exit(1)
+		}
+
+		// Default config path
+		configPath = homeDir + "/.ibsc_conf"
+	} else {
+		configPath = *path
 	}
 
 	// Read config
-	configPath := homeDir + "/.ibsc_conf"
 	var config Settings
 	content, err := os.ReadFile(configPath)
 	if err != nil {
@@ -126,7 +149,7 @@ func loadConfig() Settings {
 }
 
 func printStatus() {
-	config := loadConfig()
+	config := loadConfig(nil)
 	fmt.Println("Server:", config.Server)
 	fmt.Println("--------------------")
 
