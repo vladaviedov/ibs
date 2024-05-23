@@ -17,6 +17,8 @@ const version = "0.2.0"
 
 type Settings struct {
 	Server string `json:"server"`
+	PortHTTP uint `json:"portHttp"`
+	PortHTTPS uint `json:"portHttps"`
 	WithShell bool `json:"withShell"`
 	ShowCommand bool `json:"showCommand"`
 }
@@ -154,25 +156,27 @@ func printStatus() {
 	fmt.Println("--------------------")
 
 	// Ping HTTPS
-	url := "https://" + config.Server + "/ping"
+	url := fmt.Sprintf("https://%s:%d/ping", config.Server, config.PortHTTPS)
 	res, err := http.Get(url)
+	fmt.Printf("https (%d): ", config.PortHTTPS)
 	if err != nil {
-		fmt.Println("https: not reachable")
+		fmt.Println("not reachable")
 	} else if res.StatusCode != http.StatusOK {
-		fmt.Println("https: server error")
+		fmt.Println("server error")
 	} else {
-		fmt.Println("https: good")
+		fmt.Println("good")
 	}
 
 	// Ping HTTP
-	url = "http://" + config.Server + "/ping"
+	url = fmt.Sprintf("http://%s:%d/ping", config.Server, config.PortHTTP)
 	res, err = http.Get(url)
+	fmt.Printf("http (%d): ", config.PortHTTP)
 	if err != nil {
-		fmt.Println("http:  not reachable")
+		fmt.Println("not reachable")
 	} else if res.StatusCode != http.StatusOK {
-		fmt.Println("http:  server error")
+		fmt.Println("server error")
 	} else {
-		fmt.Println("http:  good")
+		fmt.Println("good")
 	}
 }
 
@@ -180,11 +184,11 @@ func resolveDomain(config *Settings, domain string) string {
 	identifier := strings.TrimSuffix(domain, ".ibs")
 
 	// Try https
-	url := "https://" + config.Server + "/dns/" + identifier
+	url := fmt.Sprintf("https://%s:%d/dns/%s", config.Server, config.PortHTTPS, identifier)
 	res, err := http.Get(url)
 	if err != nil {
 		// Try http
-		url = "http://" + config.Server + "/dns/" + identifier
+		url = fmt.Sprintf("http://%s:%d/dns/%s", config.Server, config.PortHTTP, identifier)
 		res, err = http.Get(url)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Failed to reach server")
