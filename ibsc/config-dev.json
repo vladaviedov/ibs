@@ -1,0 +1,7 @@
+{
+	"server": "localhost",
+	"portHttp": 8080,
+	"portHttps": 4443,
+	"withShell": true,
+	"showCommand": true
+}

@@ -31,12 +31,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if len(os.Args) == 1 {
-		printStatus()
-		os.Exit(0)
-	}
-
-	cmdStartIndex := 1
+	cmdStartIndex := len(os.Args)
 	var configPath *string = nil
 
 	for i := 1; i < len(os.Args); i++ {
@@ -67,6 +62,10 @@ func main() {
 	}
 
 	config := loadConfig(configPath)
+	if cmdStartIndex == len(os.Args) {
+		printStatus(&config)
+		os.Exit(0)
+	}
 	
 	// Find ibs addresses
 	var argv []string
@@ -150,8 +149,7 @@ func loadConfig(path *string) Settings {
 	return config
 }
 
-func printStatus() {
-	config := loadConfig(nil)
+func printStatus(config *Settings) {
 	fmt.Println("Server:", config.Server)
 	fmt.Println("--------------------")
 
